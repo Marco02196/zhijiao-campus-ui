@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>安全教育平台 - 交互原型</title>
+  <style>
+    /* ========== CSS 变量 / 主题切换 ========== */
+    :root {
+      --bg: #F8FAFF;
+      --text: #1F2937;
+      --text-muted: #94A3B8;
+      --primary: #2B7AE8;
+      --primary-light: #3B82F6;
+      --border: #E2E8F0;
+      --card-bg: #fff;
+      --shadow: 0 1px 3px rgba(0,0,0,.08);
+      --radius: 16px;
+      --nav-h: 64px;
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+    /* 低保真线框模式：在 body 上加 class="wireframe" 即可切换 */
+    body.wireframe {
+      --bg: #fff;
+      --text: #000;
+      --text-muted: #666;
+      --primary: #000;
+      --primary-light: #333;
+      --border: #000;
+      --card-bg: #fff;
+      --shadow: none;
+    }
+    body.wireframe * { border-radius: 0 !important; box-shadow: none !important; }
+    body.wireframe .card,
+    body.wireframe .banner,
+    body.wireframe .btn-primary { border: 2px dashed #000 !important; background: #fff !important; color: #000 !important; }
+    body.wireframe img { filter: grayscale(1); opacity: .5; }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", sans-serif;
+      background: #1a1a2e;
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* ========== 布局容器：PC 居中模拟手机，移动端全宽 ========== */
+    .app-shell {
+      max-width: 430px;
+      margin: 0 auto;
+      height: 100dvh;
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+    }
+    @media (min-width: 768px) {
+      body { display: flex; align-items: center; justify-content: center; padding: 20px; }
+      .app-shell { height: min(900px, 95dvh); border-radius: 24px; box-shadow: 0 25px 80px rgba(0,0,0,.4); }
+      .pc-hint { display: block; }
+    }
+    .pc-hint {
+      display: none;
+      position: fixed; top: 12px; left: 50%; transform: translateX(-50%);
+      font-size: 12px; color: rgba(255,255,255,.5); z-index: 0;
+    }
+
+    /* ========== 主内容滚动区 ========== */
+    .main-content { flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+    .main-content::-webkit-scrollbar { display: none; }
+
+    /* ========== 通用组件样式 ========== */
+    .page { display: none; min-height: 100%; padding-bottom: 16px; }
+    .page.active { display: block; }
+    .header-tech { background: linear-gradient(135deg, #EBF2FF, #F0F7FF); padding: 20px 16px 12px; }
+    .header-dark { background: linear-gradient(135deg, #0F2D52, #1A4B8C, #2563EB); padding: 20px 16px 32px; position: relative; overflow: hidden; }
+    .card { background: var(--card-bg); border-radius: var(--radius); border: 1px solid rgba(226,232,240,.6); box-shadow: var(--shadow); }
+    .section-title { font-size: 16px; font-weight: 700; color: var(--text); }
+    .text-muted { color: var(--text-muted); }
+    .btn { border: none; cursor: pointer; font-family: inherit; transition: transform .15s, opacity .15s; }
+    .btn:active { transform: scale(.95); }
+    .btn-primary { background: linear-gradient(90deg, var(--primary), var(--primary-light)); color: #fff; border-radius: 12px; font-weight: 700; }
+    .btn-ghost { background: rgba(43,122,232,.08); color: var(--primary); border-radius: 20px; font-size: 12px; font-weight: 600; padding: 4px 10px; }
+    .btn-icon { width: 36px; height: 36px; border-radius: 50%; background: #fff; box-shadow: var(--shadow); display: flex; align-items: center; justify-content: center; border: none; cursor: pointer; }
+    .icon { width: 18px; height: 18px; flex-shrink: 0; }
+    .icon-sm { width: 14px; height: 14px; }
+    .icon-lg { width: 24px; height: 24px; }
+    .flex { display: flex; }
+    .flex-col { flex-direction: column; }
+    .items-center { align-items: center; }
+    .justify-between { justify-content: space-between; }
+    .gap-2 { gap: 8px; }
+    .gap-3 { gap: 12px; }
+    .flex-1 { flex: 1; min-width: 0; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+    .px-4 { padding-left: 16px; padding-right: 16px; }
+    .py-3 { padding-top: 12px; padding-bottom: 12px; }
+    .mb-3 { margin-bottom: 12px; }
+    .mt-3 { margin-top: 12px; }
+    .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .progress-bar { height: 8px; background: #F1F5F9; border-radius: 99px; overflow: hidden; }
+    .progress-fill { height: 100%; border-radius: 99px; transition: width .7s; }
+    @keyframes fadeInUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+    .fade-in { animation: fadeInUp .45s ease-out; }
+
+    /* ========== Tab 切换器 ========== */
+    .tab-switcher { display: flex; padding: 4px; gap: 4px; }
+    .tab-switcher .tab-btn { flex: 1; padding: 10px; border-radius: 12px; border: none; background: transparent; font-size: 14px; font-weight: 700; color: var(--text-muted); cursor: pointer; transition: all .3s; }
+    .tab-switcher .tab-btn.active { background: linear-gradient(90deg, var(--primary), var(--primary-light)); color: #fff; box-shadow: 0 2px 8px rgba(43,122,232,.3); }
+
+    /* ========== 底部导航 ========== */
+    .bottom-nav { height: var(--nav-h); background: rgba(255,255,255,.95); backdrop-filter: blur(12px); border-top: 1px solid rgba(226,232,240,.6); display: flex; align-items: center; justify-content: space-around; padding-bottom: var(--safe-bottom); flex-shrink: 0; z-index: 50; }
+    .bottom-nav.hidden { display: none; }
+    .nav-item { display: flex; flex-direction: column; align-items: center; gap: 2px; background: none; border: none; cursor: pointer; width: 80px; padding: 4px 0; color: var(--text-muted); transition: color .3s; }
+    .nav-item.active { color: var(--primary); }
+    .nav-icon-wrap { width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; transition: all .3s; }
+    .nav-item.active .nav-icon-wrap { background: linear-gradient(135deg, var(--primary), var(--primary-light)); box-shadow: 0 4px 12px rgba(43,122,232,.25); }
+    .nav-item.active .nav-icon-wrap svg { stroke: #fff; }
+    .nav-label { font-size: 10px; font-weight: 700; }
+
+    /* ========== Banner ========== */
+    .banner { border-radius: var(--radius); overflow: hidden; position: relative; aspect-ratio: 16/7; box-shadow: 0 8px 24px rgba(0,0,0,.15); }
+    .banner-bg { position: absolute; inset: 0; background: linear-gradient(135deg, #0F2D52, #1A4B8C, #2563EB); }
+    .banner-content { position: absolute; inset: 0; padding: 16px; display: flex; flex-direction: column; justify-content: space-between; }
+
+    /* ========== 安全分类卡片 ========== */
+    .cat-btn { padding: 12px; display: flex; flex-direction: column; align-items: center; gap: 8px; border: none; background: var(--card-bg); border-radius: var(--radius); cursor: pointer; border: 1px solid rgba(226,232,240,.6); box-shadow: var(--shadow); }
+    .cat-icon { width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #fff; }
+
+    /* ========== 手风琴 ========== */
+    .accordion-item { overflow: hidden; margin-bottom: 10px; }
+    .accordion-header { width: 100%; padding: 14px; display: flex; align-items: center; gap: 12px; border: none; background: var(--card-bg); cursor: pointer; text-align: left; }
+    .accordion-body { display: none; padding: 0 14px 14px; border-top: 1px solid #F1F5F9; }
+    .accordion-item.expanded .accordion-body { display: block; }
+    .accordion-item.expanded .chevron { transform: rotate(90deg); }
+    .chevron { transition: transform .3s; color: #CBD5E1; }
+
+    /* ========== 弹窗 / Toast / Loading ========== */
+    .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 200; display: none; align-items: flex-end; justify-content: center; }
+    .overlay.show { display: flex; }
+    @media (min-width: 768px) { .overlay { align-items: center; } }
+    .modal { background: #fff; border-radius: 20px 20px 0 0; width: 100%; max-width: 430px; max-height: 85dvh; overflow-y: auto; transform: translateY(100%); transition: transform .3s; }
+    @media (min-width: 768px) { .modal { border-radius: 20px; transform: scale(.9); opacity: 0; } }
+    .overlay.show .modal { transform: translateY(0); }
+    @media (min-width: 768px) { .overlay.show .modal { transform: scale(1); opacity: 1; } }
+    .modal-header { padding: 16px; border-bottom: 1px solid #F1F5F9; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; background: #fff; z-index: 1; }
+    .modal-title { font-size: 16px; font-weight: 700; }
+    .modal-close { width: 32px; height: 32px; border-radius: 50%; border: none; background: #F1F5F9; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; }
+    .modal-body { padding: 16px; }
+    .modal-footer { padding: 16px; border-top: 1px solid #F1F5F9; }
+
+    .toast-wrap { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 300; display: flex; flex-direction: column; gap: 8px; width: min(380px, 90vw); pointer-events: none; }
+    .toast { padding: 12px 16px; border-radius: 12px; font-size: 13px; font-weight: 500; color: #fff; animation: fadeInUp .3s; pointer-events: auto; display: flex; align-items: center; gap: 8px; }
+    .toast.success { background: #10B981; }
+    .toast.error { background: #EF4444; }
+    .toast.info { background: var(--primary); }
+
+    .loading-overlay { position: fixed; inset: 0; background: rgba(255,255,255,.7); z-index: 250; display: none; align-items: center; justify-content: center; flex-direction: column; gap: 12px; }
+    .loading-overlay.show { display: flex; }
+    .spinner { width: 40px; height: 40px; border: 3px solid #E2E8F0; border-top-color: var(--primary); border-radius: 50%; animation: spin .8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ========== 表单 ========== */
+    .form-group { margin-bottom: 16px; }
+    .form-label { display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px; }
+    .form-input { width: 100%; padding: 12px 14px; border: 1px solid var(--border); border-radius: 12px; font-size: 14px; outline: none; transition: border-color .2s; }
+    .form-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(43,122,232,.15); }
+    .form-input.error { border-color: #EF4444; }
+    .form-error { font-size: 12px; color: #EF4444; margin-top: 4px; display: none; }
+    .form-error.show { display: block; }
+    .form-switch { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #F1F5F9; }
+    .switch { width: 48px; height: 28px; background: #CBD5E1; border-radius: 14px; position: relative; cursor: pointer; transition: background .2s; border: none; }
+    .switch.on { background: var(--primary); }
+    .switch::after { content: ''; position: absolute; width: 22px; height: 22px; background: #fff; border-radius: 50%; top: 3px; left: 3px; transition: transform .2s; box-shadow: 0 1px 3px rgba(0,0,0,.2); }
+    .switch.on::after { transform: translateX(20px); }
+
+    /* ========== 风格切换浮钮 ========== */
+    .style-toggle { position: fixed; bottom: 80px; right: max(16px, calc(50% - 215px + 16px)); z-index: 100; width: 44px; height: 44px; border-radius: 50%; background: #1F2937; color: #fff; border: none; cursor: pointer; font-size: 11px; font-weight: 700; box-shadow: 0 4px 12px rgba(0,0,0,.3); }
+    @media (min-width: 768px) { .style-toggle { right: calc(50% - 215px + 16px); bottom: calc(50% - 450px + 80px); } }
+
+    /* ========== 子页面（全屏） ========== */
+    .sub-page { position: absolute; inset: 0; background: var(--bg); z-index: 60; display: none; flex-direction: column; }
+    .sub-page.show { display: flex; }
+    .sub-page-header { padding: 12px 16px; display: flex; align-items: center; gap: 12px; background: linear-gradient(135deg, #EBF2FF, #F0F7FF); flex-shrink: 0; }
+    .sub-page-body { flex: 1; overflow-y: auto; padding: 16px; }
+
+    /* ========== 菜单列表 ========== */
+    .menu-item { width: 100%; padding: 14px 16px; display: flex; align-items: center; gap: 12px; border: none; background: none; cursor: pointer; text-align: left; border-bottom: 1px solid #F1F5F9; }
+    .menu-item:active { background: var(--bg); }
+    .menu-icon { width: 36px; height: 36px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+
+    /* ========== 统计卡片 ========== */
+    .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; padding: 16px; }
+    .stat-item { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; }
+    .stat-icon { width: 36px; height: 36px; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #fff; }
+
+    /* ========== 反诈专题 ========== */
+    .anti-fraud { border: 1px solid #FEE2E2; border-radius: 12px; overflow: hidden; margin-top: 16px; background: linear-gradient(135deg, #FEF2F2, #fff); }
+    .anti-fraud-header { padding: 12px 14px; background: linear-gradient(90deg, #DC2626, #EF4444); display: flex; align-items: center; gap: 10px; color: #fff; }
+  </style>
+</head>
+<body>
+  <p class="pc-hint">PC 预览模式 · 居中模拟移动端 430px 宽度</p>
+
+  <!-- Toast 消息容器 -->
+  <div class="toast-wrap" id="toastWrap"></div>
+  <!-- 全局 Loading -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner"></div>
+    <span class="text-muted" id="loadingText">加载中...</span>
+  </div>
+
+  <div class="app-shell" id="appShell">
+    <main class="main-content" id="mainContent">
+      <!-- 页面内容由 JS 渲染 -->
+    </main>
+    <nav class="bottom-nav" id="bottomNav"></nav>
+  </div>
+
+  <!-- 通用弹窗 -->
+  <div class="overlay" id="modalOverlay" onclick="App.handleOverlayClick(event)">
+    <div class="modal" id="modal" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <span class="modal-title" id="modalTitle"></span>
+        <button class="modal-close" onclick="App.closeModal()" aria-label="关闭">&times;</button>
+      </div>
+      <div class="modal-body" id="modalBody"></div>
+      <div class="modal-footer" id="modalFooter" style="display:none"></div>
+    </div>
+  </div>
+
+  <!-- 全屏子页面（账号安全、设置等） -->
+  <div class="sub-page" id="subPage">
+    <div class="sub-page-header">
+      <button class="btn-icon" onclick="App.closeSubPage()">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      </button>
+      <span style="font-weight:700;font-size:17px" id="subPageTitle"></span>
+    </div>
+    <div class="sub-page-body" id="subPageBody"></div>
+  </div>
+
+  <!-- 低保真/高保真切换按钮 -->
+  <button class="style-toggle" id="styleToggle" title="切换线框/高保真">HiFi</button>
+
+<script>
+/* ============================================================
+ *  安全教育平台 - 独立单文件交互原型
+ *  修改指南：
+ *  - DATA 对象：修改文案、课程、新闻等静态数据
+ *  - MockAPI：调整模拟接口延迟/成功率
+ *  - App.render*：修改各页面 HTML 结构
+ *  - CSS 变量：调整主题色
+ * ============================================================ */
+
+// ========== SVG 图标库（无外部依赖） ==========
+const Icons = {
+  home: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>',
+  user: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
+  shield: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',
+  chevronR: '<svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>',
+  play: '<svg class="icon-sm" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>',
+  check: '<svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>',
+  clock: '<svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+  award: '<svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="6"/><path d="M8.21 13.89L7 23l5-3 5 3-1.21-9.12"/></svg>',
+  book: '<svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>',
+  download: '<svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
+  car: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h5l3 5v5h-2M16 16H7"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>',
+  wifi: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12.55a11 11 0 0114.08 0"/><path d="M1.42 9a16 16 0 0121.16 0"/><path d="M8.53 16.11a6 6 0 016.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>',
+  flame: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8.5 14.5A2.5 2.5 0 0011 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 11-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 003.5 0z"/></svg>',
+  pill: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.5 20.5l10-10a4.95 4.95 0 10-7-7l-10 10a4.95 4.95 0 107 7z"/><line x1="8.5" y1="8.5" x2="15.5" y2="15.5"/></svg>',
+  heart: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>',
+  alert: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+};
+
+// ========== 静态数据（在此修改文案/内容） ==========
+const DATA = {
+  learningProgress: 75,
+  student: { name:'张小明', studentId:'2023010842', school:'广州市增城职业技术学院', major:'计算机应用技术', grade:'2023级', class:'计应1班', phone:'138****8888' },
+  safetyCategories: [
+    { id:'traffic', label:'交通安全', color:'linear-gradient(135deg,#2563EB,#3B82F6)', icon:'car' },
+    { id:'cyber', label:'网络安全', color:'linear-gradient(135deg,#0891B2,#06B6D4)', icon:'wifi' },
+    { id:'fire', label:'消防安全', color:'linear-gradient(135deg,#EA580C,#F97316)', icon:'flame' },
+    { id:'drug', label:'禁毒', color:'linear-gradient(135deg,#DC2626,#EF4444)', icon:'pill' },
+    { id:'mental', label:'心理健康', color:'linear-gradient(135deg,#DB2777,#EC4899)', icon:'heart' },
+    { id:'emergency', label:'应急避险', color:'linear-gradient(135deg,#9333EA,#A855F7)', icon:'alert' },
+  ],
+  newsItems: [
+    { title:'以案说法治 | 广州增城警方破获三起侵财类案件', date:'05-30', read:false, link:'https://mp.weixin.qq.com/s/DtKQwk5AZ-_H8jNg3bR9NQ' },
+    { title:'「长得帅，破案快」——广州增城警方破获三起侵财案件', date:'06-06', read:false, link:'https://mp.weixin.qq.com/s/fGSl5BA4DCYP1G43GnrPrQ' },
+    { title:'二十万黄金失窃近一年未察觉 民警细致溯源破案挽损', date:'06-09', read:false, link:'https://mp.weixin.qq.com/s/YFeYMuIATYhnAJp2cMwb7Q' },
+  ],
+  skillCourses: [
+    { name:'专升本考试辅导', category:'升学', size:'256MB', downloads:3421 },
+    { name:'成人高考备考班', category:'成考', size:'198MB', downloads:2892 },
+    { name:'无人机驾驶培训', category:'无人机', size:'890MB', downloads:1567 },
+    { name:'PLC自动化编程', category:'工业', size:'1.5GB', downloads:1234 },
+    { name:'茶艺师资格认证', category:'技能', size:'320MB', downloads:876 },
+    { name:'电工上岗证培训', category:'特种', size:'680MB', downloads:2103 },
+  ],
+  studyMaterials: [
+    { name:'机械制图基础', category:'工科', size:'120MB', color:'#2B7AE8' },
+    { name:'会计电算化实训', category:'商科', size:'200MB', color:'#6366F1' },
+    { name:'护理学基础教程', category:'医科', size:'350MB', color:'#10B981' },
+    { name:'烹饪工艺与营养', category:'餐饮', size:'180MB', color:'#F59E0B' },
+    { name:'学前教育学', category:'教育', size:'150MB', color:'#EC4899' },
+    { name:'汽车维修技术', category:'汽修', size:'420MB', color:'#8B5CF6' },
+  ],
+  allTopics: [
+    { id:'traffic', title:'交通安全', color:'linear-gradient(90deg,#2563EB,#3B82F6)', icon:'car', desc:'学习道路交通安全法规，养成文明出行习惯，掌握交通事故应急处理方法。',
+      courses:[{name:'道路交通安全法规',duration:'15分钟',done:true},{name:'电动自行车安全骑行',duration:'10分钟',done:true},{name:'交通事故应急处理',duration:'12分钟',done:false}], medals:['文明出行者'] },
+    { id:'fire', title:'消防安全', color:'linear-gradient(90deg,#EA580C,#F97316)', icon:'flame', desc:'掌握消防安全知识，学会火灾预防和逃生自救技能。',
+      courses:[{name:'火灾预防与隐患排查',duration:'15分钟',done:true},{name:'灭火器使用方法',duration:'10分钟',done:true},{name:'火灾逃生自救技巧',duration:'12分钟',done:true},{name:'宿舍消防安全规范',duration:'8分钟',done:false},{name:'宿舍用电安全规范',duration:'10分钟',done:true},{name:'触电急救方法',duration:'8分钟',done:false}], medals:['消防小能手','安全守护员','用电达人'] },
+    { id:'drug', title:'禁毒', color:'linear-gradient(90deg,#DC2626,#EF4444)', icon:'pill', desc:'认识毒品危害，学习拒绝毒品的技巧，了解禁毒法律法规。',
+      courses:[{name:'毒品危害与识别',duration:'12分钟',done:true},{name:'拒绝毒品的技巧',duration:'10分钟',done:false},{name:'禁毒法律法规',duration:'15分钟',done:false}], medals:['禁毒先锋'] },
+    { id:'cyber', title:'网络安全', color:'linear-gradient(90deg,#0891B2,#06B6D4)', icon:'wifi', desc:'防范网络诈骗，保护个人信息安全，健康使用网络。',
+      courses:[{name:'网络诈骗识别与防范',duration:'15分钟',done:true},{name:'个人信息保护指南',duration:'10分钟',done:true},{name:'健康上网习惯养成',duration:'8分钟',done:false}],
+      subCategory:{ name:'反诈', courses:[{name:'电信诈骗常见套路',duration:'10分钟',done:false},{name:'刷单返利骗局揭秘',duration:'8分钟',done:false},{name:'冒充客服退款诈骗',duration:'8分钟',done:false},{name:'裸聊敲诈防范指南',duration:'6分钟',done:false}] },
+      medals:['反诈小卫士','火眼金睛'] },
+    { id:'mental', title:'心理健康', color:'linear-gradient(90deg,#DB2777,#EC4899)', icon:'heart', desc:'关注心理健康，学会情绪管理和压力调节。',
+      courses:[{name:'大学生心理健康基础',duration:'12分钟',done:true},{name:'情绪管理与压力调节',duration:'15分钟',done:false},{name:'人际交往与沟通技巧',duration:'10分钟',done:false}], medals:['阳光心态'] },
+    { id:'emergency', title:'应急避险', color:'linear-gradient(90deg,#9333EA,#A855F7)', icon:'alert', desc:'学习各类突发事件的应急处置方法，提高自救互救能力。',
+      courses:[{name:'地震避险与逃生',duration:'12分钟',done:true},{name:'洪水台风应对指南',duration:'10分钟',done:false},{name:'突发公共卫生事件应对',duration:'15分钟',done:false}], medals:['应急先锋'] },
+  ],
+  examRecords: [
+    { name:'道路交通安全法规', score:92, date:'2025-05-12', pass:true },
+    { name:'火灾预防与隐患排查', score:88, date:'2025-05-18', pass:true },
+    { name:'毒品危害与识别', score:95, date:'2025-05-25', pass:true },
+    { name:'网络诈骗识别与防范', score:78, date:'2025-06-01', pass:true },
+  ],
+  certificates: ['道路交通安全法规证书','消防安全培训证书','禁毒知识合格证书','网络安全基础证书','心理健康素养证书'],
+  profileMenu: [
+    { id:'records', label:'学习记录', desc:'查看学习历史', color:'#2B7AE8' },
+    { id:'certs', label:'我的证书', desc:'已获得的证书', color:'#F59E0B' },
+    { id:'exams', label:'考试安排', desc:'即将进行的考试', color:'#10B981' },
+    { id:'favorites', label:'我的收藏', desc:'收藏的课程和资料', color:'#EC4899' },
+    { id:'notifications', label:'消息通知', desc:'系统通知和提醒', color:'#0891B2' },
+    { id:'security', label:'账号安全', desc:'密码和安全设置', color:'#8B5CF6' },
+    { id:'settings', label:'系统设置', desc:'应用偏好设置', color:'#6366F1' },
+    { id:'help', label:'帮助中心', desc:'常见问题解答', color:'#14B8A6' },
+  ],
+  faq: [
+    { q:'如何参加安全考试？', a:'完成对应专题的全部课程学习后，系统自动解锁考试入口。' },
+    { q:'证书如何下载？', a:'考试通过后，在「我的证书」中点击下载即可获取电子证书。' },
+    { q:'学习进度如何同步？', a:'学习进度实时同步至云端，更换设备登录同一账号即可恢复。' },
+  ],
+  upcomingExams: [
+    { name:'交通事故应急处理', date:'2025-06-28 14:00', topic:'交通安全' },
+    { name:'宿舍消防安全规范', date:'2025-07-02 10:00', topic:'消防安全' },
+  ],
+};
+
+// ========== 模拟 API（可调整 delay / failRate） ==========
+const MockAPI = {
+  delay: 800,       // 模拟网络延迟 ms
+  failRate: 0.1,    // 10% 概率失败，设为 0 关闭随机错误
+
+  async request(action, payload = {}) {
+    await new Promise(r => setTimeout(r, this.delay));
+    if (Math.random() < this.failRate) throw new Error('网络请求失败，请稍后重试');
+    switch (action) {
+      case 'downloadMaterial': return { success: true, filename: payload.name + '.pdf' };
+      case 'startCourse': return { success: true, courseId: payload.courseName };
+      case 'completeCourse': return { success: true, medal: payload.medal || null };
+      case 'changePassword': return { success: true };
+      case 'saveSettings': return { success: true };
+      case 'markNewsRead': return { success: true };
+      default: return { success: true };
+    }
+  }
+};
+
+// ========== 应用状态 ==========
+const state = {
+  activeTab: 'home',       // home | profile
+  currentPage: 'home',     // home | safetyDetail
+  homeSection: 'safety',   // safety | skills
+  expandedTopic: 'traffic',
+  courseProgress: {},      // 动态课程完成状态
+  newsRead: {},
+  settings: { dailyReminder: true, pushNotify: true, wifiOnly: false },
+  wireframe: false,
+};
+
+// ========== 工具函数 ==========
+function $(sel) { return document.querySelector(sel); }
+function $$(sel) { return document.querySelectorAll(sel); }
+function icon(name) { return Icons[name] || ''; }
+function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+function showToast(msg, type = 'info') {
+  const wrap = $('#toastWrap');
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.textContent = msg;
+  wrap.appendChild(el);
+  setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity .3s'; setTimeout(() => el.remove(), 300); }, 2800);
+}
+
+function showLoading(text = '加载中...') {
+  $('#loadingText').textContent = text;
+  $('#loadingOverlay').classList.add('show');
+}
+function hideLoading() { $('#loadingOverlay').classList.remove('show'); }
+
+// ========== 主应用逻辑 ==========
+const App = {
+  init() {
+    // 初始化课程进度（从 DATA 同步）
+    DATA.allTopics.forEach(t => {
+      t.courses.forEach(c => { state.courseProgress[c.name] = c.done; });
+      if (t.subCategory) t.subCategory.courses.forEach(c => { state.courseProgress[c.name] = c.done; });
+    });
+    DATA.newsItems.forEach((n, i) => { state.newsRead[i] = n.read; });
+
+    $('#styleToggle').onclick = () => {
+      state.wireframe = !state.wireframe;
+      document.body.classList.toggle('wireframe', state.wireframe);
+      $('#styleToggle').textContent = state.wireframe ? 'Wire' : 'HiFi';
+    };
+
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') { this.closeModal(); this.closeSubPage(); }
+    });
+
+    this.render();
+  },
+
+  // ---------- 路由 ----------
+  navigate(page) {
+    state.currentPage = page;
+    this.render();
+  },
+  switchTab(tab) {
+    state.activeTab = tab;
+    state.currentPage = 'home';
+    this.render();
+  },
+  switchHomeSection(section) {
+    state.homeSection = section;
+    this.renderMain();
+  },
+
+  render() {
+    this.renderMain();
+    this.renderNav();
+  },
+
+  renderNav() {
+    const nav = $('#bottomNav');
+    const hidden = state.currentPage !== 'home';
+    nav.className = 'bottom-nav' + (hidden ? ' hidden' : '');
+    if (hidden) return;
+    nav.innerHTML = [
+      { key:'home', label:'首页', icon:'home' },
+      { key:'profile', label:'我的', icon:'user' },
+    ].map(t => `<button class="nav-item${state.activeTab === t.key ? ' active' : ''}" onclick="App.switchTab('${t.key}')">
+      <div class="nav-icon-wrap">${icon(t.icon)}</div>
+      <span class="nav-label">${t.label}</span>
+    </button>`).join('');
+  },
+
+  renderMain() {
+    const main = $('#mainContent');
+    if (state.currentPage === 'safetyDetail') {
+      main.innerHTML = this.renderSafetyDetail();
+      this.bindSafetyDetailEvents();
+      return;
+    }
+    if (state.activeTab === 'profile') {
+      main.innerHTML = this.renderProfile();
+      this.bindProfileEvents();
+      return;
+    }
+    main.innerHTML = this.renderHome();
+    this.bindHomeEvents();
+  },
+
+  // ---------- 首页渲染 ----------
+  renderHome() {
+    const sec = state.homeSection;
+    return `<div class="page active fade-in">
+      <header class="header-tech">
+        <h1 style="font-size:22px;font-weight:700">学习成长</h1>
+        <p class="text-muted" style="font-size:13px;margin-top:2px">安全为先，技能提升</p>
+      </header>
+      <div class="px-4" style="padding-top:16px;padding-bottom:24px">
+        <!-- Tab 切换：安全教育 / 技能培训 -->
+        <div class="card tab-switcher mb-3">
+          <button class="tab-btn${sec==='safety'?' active':''}" data-section="safety">安全教育</button>
+          <button class="tab-btn${sec==='skills'?' active':''}" data-section="skills">技能培训</button>
+        </div>
+        ${sec === 'safety' ? this.renderHomeSafety() : this.renderHomeSkills()}
+      </div>
+    </div>`;
+  },
+
+  renderHomeSafety() {
+    const p = DATA.learningProgress;
+    const cats = DATA.safetyCategories.map(c => `
+      <button class="cat-btn" data-nav="safetyDetail">
+        <div class="cat-icon" style="background:${c.color}">${icon(c.icon)}</div>
+        <span style="font-size:11px;font-weight:700;color:#475569">${c.label}</span>
+      </button>`).join('');
+    const news = DATA.newsItems.map((n, i) => `
+      <div class="card p-3 flex gap-3 news-item" data-news="${i}" style="padding:12px;margin-bottom:12px;cursor:pointer">
+        <div style="width:72px;height:72px;border-radius:12px;background:linear-gradient(135deg,#E2E8F0,#CBD5E1);flex-shrink:0"></div>
+        <div class="flex-1">
+          <div class="line-clamp-2" style="font-size:14px;font-weight:700">${esc(n.title)}</div>
+          <div class="flex justify-between items-center mt-3">
+            <span class="text-muted" style="font-size:12px">${n.date}</span>
+            ${state.newsRead[i] ? '<span class="text-muted" style="font-size:12px">已读</span>' :
+              '<span style="font-size:12px;color:#2B7AE8;font-weight:700">● 未读</span>'}
+          </div>
+        </div>
+      </div>`).join('');
+    return `
+      <!-- 安全教育 Banner -->
+      <section class="banner mb-3 fade-in">
+        <div class="banner-bg"></div>
+        <div class="banner-content">
+          <div>
+            <div class="flex items-center gap-2 mb-2">
+              <div style="width:24px;height:24px;border-radius:6px;background:rgba(43,122,232,.3);display:flex;align-items:center;justify-content:center;color:#60A5FA">${Icons.shield.replace('class="icon"','class="icon-sm"')}</div>
+              <span style="color:rgba(255,255,255,.7);font-size:12px;font-weight:600">校园安全教育</span>
+            </div>
+            <h2 style="color:#fff;font-size:20px;font-weight:700">专题学习</h2>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="flex-1">
+              <div class="flex justify-between" style="color:rgba(255,255,255,.7);font-size:11px;margin-bottom:6px"><span>学习进度</span><span>${p}%</span></div>
+              <div class="progress-bar" style="background:rgba(255,255,255,.15)"><div class="progress-fill" style="width:${p}%;background:linear-gradient(90deg,#2B7AE8,#10B981)"></div></div>
+            </div>
+            <button class="btn btn-primary" data-nav="safetyDetail" style="padding:8px 16px;font-size:12px;display:flex;align-items:center;gap:6px">${Icons.play} 去学习</button>
+          </div>
+        </div>
+      </section>
+      <!-- 安全专题分类 -->
+      <section class="mb-3 fade-in">
+        <div class="flex justify-between items-center mb-3">
+          <h2 class="section-title">安全专题</h2>
+          <button class="btn btn-ghost" data-nav="safetyDetail">查看更多 ${Icons.chevronR}</button>
+        </div>
+        <div class="grid-3">${cats}</div>
+      </section>
+      <!-- 警示案例 -->
+      <section class="mb-3 fade-in">
+        <div class="flex items-center gap-2 mb-3">
+          <div style="width:24px;height:24px;border-radius:8px;background:linear-gradient(135deg,#2B7AE8,#60A5FA);display:flex;align-items:center;justify-content:center;color:#fff">${Icons.book.replace('class="icon-sm"','class="icon-sm"')}</div>
+          <h2 class="section-title">警示案例</h2>
+        </div>
+        ${news}
+      </section>
+      <!-- 考试记录 -->
+      <section class="fade-in">
+        <div class="flex justify-between items-center mb-3">
+          <div class="flex items-center gap-2">
+            <div style="width:24px;height:24px;border-radius:8px;background:linear-gradient(135deg,#F59E0B,#FFB366);display:flex;align-items:center;justify-content:center;color:#fff">${Icons.award}</div>
+            <h2 class="section-title">考试记录</h2>
+          </div>
+          <button class="btn btn-ghost" id="btnExamRecords">查看详情 ${Icons.chevronR}</button>
+        </div>
+        <div class="card p-4 flex items-center gap-4" style="padding:16px">
+          <div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#10B981,#5AD8A2);display:flex;align-items:center;justify-content:center;color:#fff">${Icons.check.replace('stroke="#10B981"','stroke="#fff"')}</div>
+          <div class="flex-1">
+            <div style="font-size:15px;font-weight:700">已通过 4 门考试</div>
+            <div class="text-muted" style="font-size:12px;margin-top:2px">已获得 3 枚勋章</div>
+          </div>
+          <div class="flex items-center gap-1" style="color:#FFB366;font-weight:700">${Icons.award} 3</div>
+        </div>
+      </section>`;
+  },
+
+  renderHomeSkills() {
+    const courses = DATA.skillCourses.map((c, i) => `
+      <div class="card flex items-center gap-3" style="padding:14px;margin-bottom:10px">
+        <div style="width:56px;height:56px;border-radius:12px;background:linear-gradient(135deg,#E2E8F0,#CBD5E1);flex-shrink:0"></div>
+        <div class="flex-1">
+          <div style="font-size:14px;font-weight:700">${esc(c.name)}</div>
+          <div class="flex items-center gap-2 mt-1">
+            <span style="padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;color:#fff;background:#2B7AE8">${c.category}</span>
+            <span class="text-muted" style="font-size:10px">${c.size}</span>
+          </div>
+        </div>
+        <button class="btn skill-detail-btn" data-skill="${i}" style="background:none;display:flex;flex-direction:column;align-items:center;gap:2px">
+          <div style="width:32px;height:32px;border-radius:50%;background:#EFF6FF;display:flex;align-items:center;justify-content:center;color:#2B7AE8">${Icons.chevronR.replace('points="9 18 15 12 9 6"','points="6 9 12 15 18 9"')}</div>
+          <span class="text-muted" style="font-size:9px">详情</span>
+        </button>
+      </div>`).join('');
+    const materials = DATA.studyMaterials.map((m, i) => `
+      <div class="flex items-center gap-3" style="margin-bottom:12px">
+        <div style="width:36px;height:36px;border-radius:8px;background:${m.color}15;display:flex;align-items:center;justify-content:center;color:${m.color}">${Icons.book}</div>
+        <div class="flex-1">
+          <div style="font-size:14px;font-weight:600">${esc(m.name)}</div>
+          <div class="flex items-center gap-2 mt-1">
+            <span style="padding:2px 6px;border-radius:4px;font-size:10px;font-weight:700;background:#F8FAFF;color:#94A3B8">${m.category}</span>
+            <span class="text-muted" style="font-size:10px">${m.size}</span>
+          </div>
+        </div>
+        <button class="btn download-btn" data-material="${i}" style="width:28px;height:28px;border-radius:50%;background:#F8FAFF;display:flex;align-items:center;justify-content:center;color:#2B7AE8">${Icons.download}</button>
+      </div>`).join('');
+    return `
+      <section class="mb-3 fade-in">
+        <div class="flex items-center gap-2 mb-3">
+          <div style="width:24px;height:24px;border-radius:8px;background:linear-gradient(135deg,#2B7AE8,#60A5FA);display:flex;align-items:center;justify-content:center;color:#fff">${Icons.book}</div>
+          <h2 class="section-title">技能培训与考级</h2>
+        </div>
+        ${courses}
+      </section>
+      <section class="mb-3 fade-in">
+        <div class="flex items-center gap-2 mb-3">
+          <div style="width:24px;height:24px;border-radius:8px;background:linear-gradient(135deg,#10B981,#5AD8A2);display:flex;align-items:center;justify-content:center;color:#fff">${Icons.book}</div>
+          <h2 class="section-title">学习资料</h2>
+        </div>
+        <div class="card" style="padding:16px">${materials}</div>
+      </section>
+      <div class="card flex items-center gap-4 fade-in" style="padding:16px">
+        <div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#2B7AE8,#60A5FA);display:flex;align-items:center;justify-content:center;color:#fff">${Icons.clock.replace('stroke="currentColor"','stroke="#fff"')}</div>
+        <div class="flex-1">
+          <div style="font-size:15px;font-weight:700">每日学习提醒已开启</div>
+          <div class="text-muted" style="font-size:12px;margin-top:2px">已连续学习 12 天 · 获得 3 张证书</div>
+        </div>
+      </div>`;
+  },
+
+  bindHomeEvents() {
+    $$('[data-section]').forEach(btn => btn.onclick = () => this.switchHomeSection(btn.dataset.section));
+    $$('[data-nav="safetyDetail"]').forEach(btn => btn.onclick = () => this.navigate('safetyDetail'));
+    const examBtn = $('#btnExamRecords');
+    if (examBtn) examBtn.onclick = () => this.showExamRecordsModal();
+    $$('.news-item').forEach(el => el.onclick = () => this.handleNewsClick(+el.dataset.news));
+    $$('.skill-detail-btn').forEach(btn => btn.onclick = () => this.showSkillDetailModal(+btn.dataset.skill));
+    $$('.download-btn').forEach(btn => btn.onclick = () => this.handleDownload(+btn.dataset.material));
+  },
+
+  // ---------- 安全详情页 ----------
+  renderSafetyDetail() {
+    const topics = DATA.allTopics;
+    const total = topics.reduce((s, t) => s + t.courses.length + (t.subCategory ? t.subCategory.courses.length : 0), 0);
+    const done = Object.values(state.courseProgress).filter(Boolean).length;
+    const pct = Math.round(done / total * 100);
+    const accordion = topics.map(t => {
+      const tc = t.courses.filter(c => state.courseProgress[c.name]).length;
+      const expanded = state.expandedTopic === t.id;
+      const courseList = t.courses.map(c => this.renderCourseRow(c, false)).join('');
+      const sub = t.subCategory ? `
+        <div class="anti-fraud">
+          <div class="anti-fraud-header">
+            ${Icons.shield.replace('class="icon"','class="icon-sm"')}
+            <div class="flex-1">
+              <div style="font-weight:700;font-size:14px">${t.subCategory.name}专题</div>
+              <div style="font-size:10px;opacity:.7;margin-top:2px">识别诈骗套路，守护财产安全</div>
+            </div>
+          </div>
+          <div style="padding:12px 14px">${t.subCategory.courses.map(c => this.renderCourseRow(c, true)).join('')}</div>
+        </div>` : '';
+      const medals = t.medals.map(m => `<span style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:8px;background:#FEF3C7;font-size:10px;font-weight:700;color:#92400E;margin-right:6px;margin-top:8px">${Icons.award} ${m}</span>`).join('');
+      return `<div class="card accordion-item${expanded?' expanded':''}" data-topic="${t.id}">
+        <button class="accordion-header">
+          <div style="width:44px;height:44px;border-radius:12px;background:${t.color};display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0">${icon(t.icon)}</div>
+          <div class="flex-1">
+            <div class="flex justify-between"><span style="font-size:14px;font-weight:700">${t.title}</span><span class="text-muted" style="font-size:10px;font-weight:700">${tc}/${t.courses.length}</span></div>
+            <div class="progress-bar mt-3" style="height:6px;margin-top:6px"><div class="progress-fill" style="width:${tc/t.courses.length*100}%;background:${t.color}"></div></div>
+          </div>
+          <span class="chevron">${Icons.chevronR}</span>
+        </button>
+        <div class="accordion-body">
+          <p class="text-muted" style="font-size:12px;line-height:1.6;padding:10px 0">${t.desc}</p>
+          ${courseList}
+          ${sub}
+          <div style="margin-top:8px;padding-top:8px;border-top:1px solid #F1F5F9">${medals}</div>
+        </div>
+      </div>`;
+    }).join('');
+    const allMedals = topics.flatMap(t => t.medals).map(m => `<span style="display:inline-flex;align-items:center;gap:4px;padding:6px 12px;border-radius:12px;background:linear-gradient(90deg,#FEF3C7,#FDE68A);font-size:12px;font-weight:700;color:#92400E;margin:4px">${Icons.award} ${m}</span>`).join('');
+    return `<div class="page active fade-in">
+      <header class="header-tech flex items-center gap-3" style="padding:14px 16px">
+        <button class="btn-icon" id="btnBack">${Icons.chevronR.replace('points="9 18 15 12 9 6"','points="19 12 5 12 12 19 5 7"')}</button>
+        <div class="flex-1">
+          <h1 style="font-size:18px;font-weight:700">校园安全教育</h1>
+          <p class="text-muted" style="font-size:10px">共 ${topics.length} 个安全主题 · ${total} 门课程</p>
+        </div>
+      </header>
+      <div class="px-4" style="padding-top:16px;padding-bottom:24px">
+        <div class="card flex items-center gap-4 mb-3" style="padding:16px">
+          <div style="width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,#2B7AE8,#3B82F6);display:flex;align-items:center;justify-content:center;color:#fff">${Icons.shield.replace('class="icon"','class="icon-lg"')}</div>
+          <div class="flex-1">
+            <div class="flex justify-between mb-2"><span style="font-size:14px;font-weight:700">总体学习进度</span><span style="font-size:14px;font-weight:700;color:#2B7AE8">${pct}%</span></div>
+            <div class="progress-bar" style="height:10px"><div class="progress-fill" style="width:${pct}%;background:linear-gradient(90deg,#2B7AE8,#10B981)"></div></div>
+            <div class="text-muted" style="font-size:11px;margin-top:6px">已完成 ${done}/${total} 门课程</div>
+          </div>
+        </div>
+        ${accordion}
+        <div class="card mt-3" style="padding:16px;margin-top:16px">
+          <h3 style="font-size:14px;font-weight:700;margin-bottom:12px">可获得勋章</h3>
+          <div style="display:flex;flex-wrap:wrap">${allMedals}</div>
+        </div>
+      </div>
+    </div>`;
+  },
+
+  renderCourseRow(c, isAntiFraud) {
+    const done = state.courseProgress[c.name];
+    const btnStyle = isAntiFraud ? 'background:linear-gradient(90deg,#DC2626,#EF4444)' : '';
+    return `<div class="flex items-center gap-2" style="padding:6px 0">
+      <div style="width:28px;height:28px;border-radius:50%;background:${done?'#ECFDF5':'#F8FAFF'};display:flex;align-items:center;justify-content:center">${done ? Icons.check : Icons.book.replace('stroke="currentColor"','stroke="#CBD5E1"')}</div>
+      <span class="flex-1" style="font-size:12px;color:${done?'#10B981':'#475569'};font-weight:${done?'500':'400'}">${esc(c.name)}</span>
+      <span class="text-muted flex items-center gap-1" style="font-size:10px">${Icons.clock} ${c.duration}</span>
+      ${done ? '' : `<button class="btn btn-primary learn-btn" data-course="${esc(c.name)}" style="padding:4px 10px;font-size:10px;${btnStyle}">学习</button>`}
+    </div>`;
+  },
+
+  bindSafetyDetailEvents() {
+    $('#btnBack').onclick = () => this.navigate('home');
+    $$('.accordion-item .accordion-header').forEach(btn => {
+      btn.onclick = () => {
+        const id = btn.closest('.accordion-item').dataset.topic;
+        state.expandedTopic = state.expandedTopic === id ? null : id;
+        this.renderMain();
+      };
+    });
+    $$('.learn-btn').forEach(btn => btn.onclick = () => this.handleLearnCourse(btn.dataset.course));
+  },
+
+  // ---------- 个人中心 ----------
+  renderProfile() {
+    const s = DATA.student;
+    const stats = [
+      { label:'学习天数', value:'128', color:'linear-gradient(135deg,#2563EB,#3B82F6)' },
+      { label:'已通过考试', value:'12', color:'linear-gradient(135deg,#10B981,#5AD8A2)' },
+      { label:'获得证书', value:'5', color:'linear-gradient(135deg,#F59E0B,#FFB366)' },
+      { label:'学习时长', value:'86h', color:'linear-gradient(135deg,#9333EA,#A855F7)' },
+    ];
+    const statHtml = stats.map(st => `
+      <div class="stat-item">
+        <div class="stat-icon" style="background:${st.color}">${Icons.clock.replace('stroke="currentColor"','stroke="#fff"')}</div>
+        <span style="font-size:16px;font-weight:700">${st.value}</span>
+        <span class="text-muted" style="font-size:10px">${st.label}</span>
+      </div>`).join('');
+    const menu = DATA.profileMenu.map(m => `
+      <button class="menu-item" data-menu="${m.id}">
+        <div class="menu-icon" style="background:${m.color}15;color:${m.color}">${Icons.book.replace('stroke="currentColor"','stroke="'+m.color+'"')}</div>
+        <div class="flex-1"><div style="font-size:14px;font-weight:600">${m.label}</div><div class="text-muted" style="font-size:11px;margin-top:2px">${m.desc}</div></div>
+        ${Icons.chevronR.replace('stroke="currentColor"','stroke="#CBD5E1"')}
+      </button>`).join('');
+    return `<div class="page active fade-in">
+      <header class="header-dark">
+        <h1 style="color:#fff;font-size:18px;font-weight:700;margin-bottom:16px">个人中心</h1>
+        <div class="flex items-center gap-4">
+          <div style="width:64px;height:64px;border-radius:16px;border:2px solid rgba(255,255,255,.3);background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.8)">${Icons.user.replace('class="icon"','class="icon-lg"')}</div>
+          <div class="flex-1">
+            <h2 style="color:#fff;font-size:18px;font-weight:700">${s.name}</h2>
+            <p style="color:rgba(255,255,255,.6);font-size:12px;margin-top:2px">${s.school}</p>
+            <div class="flex gap-2 mt-2">
+              <span style="padding:2px 8px;border-radius:6px;background:rgba(255,255,255,.15);color:rgba(255,255,255,.8);font-size:10px">${s.grade}</span>
+              <span style="padding:2px 8px;border-radius:6px;background:rgba(255,255,255,.15);color:rgba(255,255,255,.8);font-size:10px">${s.major}</span>
+            </div>
+          </div>
+        </div>
+      </header>
+      <div style="margin-top:-20px;position:relative;z-index:1" class="px-4">
+        <div class="card stat-grid">${statHtml}</div>
+      </div>
+      <div class="px-4" style="padding-top:20px;padding-bottom:24px">
+        <section class="card mb-3" style="overflow:hidden">
+          <div style="padding:16px;border-bottom:1px solid #F1F5F9"><h3 style="font-size:14px;font-weight:700">基本信息</h3></div>
+          <div style="padding:16px">
+            ${[['学号',s.studentId],['班级',s.class],['专业',s.major],['手机号',s.phone]].map(([k,v]) => `
+              <div class="flex justify-between" style="margin-bottom:12px"><span class="text-muted" style="font-size:12px">${k}</span><span style="font-size:14px;font-weight:600">${v}</span></div>`).join('')}
+          </div>
+        </section>
+        <section class="card mb-3" style="overflow:hidden">${menu}</section>
+        <section>
+          <div class="flex items-center gap-2 mb-3">
+            <div style="width:24px;height:24px;border-radius:8px;background:linear-gradient(135deg,#2B7AE8,#60A5FA);display:flex;align-items:center;justify-content:center;color:#fff">${Icons.book}</div>
+            <h2 class="section-title">学习进度</h2>
+          </div>
+          <div class="card" style="padding:16px">
+            ${[{n:'安全教育',p:75,c:'#2B7AE8'},{n:'技能培训',p:60,c:'#10B981'},{n:'普法课堂',p:45,c:'#F59E0B'}].map(x => `
+              <div style="margin-bottom:12px">
+                <div class="flex justify-between mb-2"><span style="font-size:12px;font-weight:600;color:#475569">${x.n}</span><span style="font-size:12px;font-weight:700;color:${x.c}">${x.p}%</span></div>
+                <div class="progress-bar"><div class="progress-fill" style="width:${x.p}%;background:linear-gradient(90deg,${x.c},${x.c}88)"></div></div>
+              </div>`).join('')}
+          </div>
+        </section>
+        <div class="text-muted" style="text-align:center;font-size:10px;padding-top:16px">安全教育平台 v1.0.0</div>
+      </div>
+    </div>`;
+  },
+
+  bindProfileEvents() {
+    $$('[data-menu]').forEach(btn => btn.onclick = () => this.handleMenuClick(btn.dataset.menu));
+  },
+
+  // ---------- 弹窗管理 ----------
+  openModal(title, bodyHtml, footerHtml) {
+    $('#modalTitle').textContent = title;
+    $('#modalBody').innerHTML = bodyHtml;
+    const footer = $('#modalFooter');
+    if (footerHtml) { footer.innerHTML = footerHtml; footer.style.display = 'block'; }
+    else { footer.style.display = 'none'; }
+    $('#modalOverlay').classList.add('show');
+  },
+  closeModal() { $('#modalOverlay').classList.remove('show'); },
+  handleOverlayClick(e) { if (e.target === $('#modalOverlay')) this.closeModal(); },
+
+  // ---------- 子页面（表单类） ----------
+  openSubPage(title, bodyHtml) {
+    $('#subPageTitle').textContent = title;
+    $('#subPageBody').innerHTML = bodyHtml;
+    $('#subPage').classList.add('show');
+  },
+  closeSubPage() { $('#subPage').classList.remove('show'); },
+
+  // ---------- 交互处理 ----------
+  showExamRecordsModal() {
+    const list = DATA.examRecords.map(r => `
+      <div class="flex justify-between items-center" style="padding:12px 0;border-bottom:1px solid #F1F5F9">
+        <div><div style="font-size:14px;font-weight:600">${esc(r.name)}</div><div class="text-muted" style="font-size:11px;margin-top:2px">${r.date}</div></div>
+        <div style="text-align:right"><div style="font-size:18px;font-weight:700;color:${r.pass?'#10B981':'#EF4444'}">${r.score}分</div><div style="font-size:10px;color:${r.pass?'#10B981':'#EF4444'}">${r.pass?'已通过':'未通过'}</div></div>
+      </div>`).join('');
+    this.openModal('考试记录', list);
+  },
+
+  async handleNewsClick(index) {
+    const news = DATA.newsItems[index];
+    showLoading('加载案例...');
+    try {
+      await MockAPI.request('markNewsRead', { index });
+      state.newsRead[index] = true;
+      hideLoading();
+      this.openModal('警示案例', `
+        <p style="font-size:14px;line-height:1.7;margin-bottom:12px">${esc(news.title)}</p>
+        <p class="text-muted" style="font-size:12px;margin-bottom:16px">发布日期：${news.date}</p>
+        <p style="font-size:13px;line-height:1.6;color:#475569">本案为校园安全教育警示案例，旨在提高师生防范意识。详细内容请查看原文。</p>
+      `, `<button class="btn btn-primary" style="width:100%;padding:12px" onclick="window.open('${news.link}','_blank');App.closeModal()">查看原文</button>`);
+      this.renderMain();
+    } catch (e) {
+      hideLoading();
+      showToast(e.message, 'error');
+    }
+  },
+
+  showSkillDetailModal(index) {
+    const c = DATA.skillCourses[index];
+    this.openModal(c.name, `
+      <div style="width:100%;height:120px;border-radius:12px;background:linear-gradient(135deg,#E2E8F0,#CBD5E1);margin-bottom:16px"></div>
+      <div class="flex gap-2 mb-3"><span style="padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700;color:#fff;background:#2B7AE8">${c.category}</span><span class="text-muted" style="font-size:12px">${c.size}</span></div>
+      <p class="text-muted" style="font-size:13px;line-height:1.6;margin-bottom:12px">已有 ${c.downloads.toLocaleString()} 人学习本课程。课程包含视频讲解、实操练习和模拟考试。</p>
+    `, `<button class="btn btn-primary" style="width:100%;padding:12px" onclick="App.handleEnrollSkill(${index})">立即报名</button>`);
+  },
+
+  async handleEnrollSkill(index) {
+    this.closeModal();
+    showLoading('提交报名...');
+    try {
+      await MockAPI.request('startCourse', { courseName: DATA.skillCourses[index].name });
+      hideLoading();
+      showToast('报名成功！', 'success');
+    } catch (e) {
+      hideLoading();
+      showToast(e.message, 'error');
+    }
+  },
+
+  async handleDownload(index) {
+    const m = DATA.studyMaterials[index];
+    showLoading('下载中...');
+    try {
+      const res = await MockAPI.request('downloadMaterial', { name: m.name });
+      hideLoading();
+      showToast(res.filename + ' 下载完成', 'success');
+    } catch (e) {
+      hideLoading();
+      showToast(e.message, 'error');
+    }
+  },
+
+  async handleLearnCourse(courseName) {
+    showLoading('加载课程...');
+    try {
+      await MockAPI.request('startCourse', { courseName });
+      hideLoading();
+      this.openModal('课程学习', `
+        <h3 style="font-size:16px;font-weight:700;margin-bottom:8px">${esc(courseName)}</h3>
+        <p class="text-muted" style="font-size:13px;margin-bottom:16px">请认真观看以下学习内容（模拟播放器）</p>
+        <div style="width:100%;aspect-ratio:16/9;background:#1F2937;border-radius:12px;display:flex;align-items:center;justify-content:center;color:#fff;margin-bottom:16px">
+          <div style="text-align:center"><div style="font-size:32px;margin-bottom:8px">▶</div><div style="font-size:12px;opacity:.7">视频播放中...</div></div>
+        </div>
+      `, `<button class="btn btn-primary" style="width:100%;padding:12px" onclick="App.completeCourse('${courseName.replace(/'/g,"\\'")}')">完成学习</button>`);
+    } catch (e) {
+      hideLoading();
+      showToast(e.message, 'error');
+    }
+  },
+
+  async completeCourse(courseName) {
+    this.closeModal();
+    showLoading('保存进度...');
+    try {
+      await MockAPI.request('completeCourse', { courseName });
+      state.courseProgress[courseName] = true;
+      hideLoading();
+      showToast('课程学习完成！', 'success');
+      if (state.currentPage === 'safetyDetail') this.renderMain();
+    } catch (e) {
+      hideLoading();
+      showToast(e.message, 'error');
+    }
+  },
+
+  handleMenuClick(id) {
+    const handlers = {
+      records: () => this.openModal('学习记录', DATA.examRecords.map(r =>
+        `<div style="padding:10px 0;border-bottom:1px solid #F1F5F9;font-size:13px">${Icons.book} ${esc(r.name)} <span class="text-muted">· ${r.date}</span></div>`).join('')),
+      certs: () => this.openModal('我的证书', DATA.certificates.map(c =>
+        `<div class="flex justify-between items-center" style="padding:12px 0;border-bottom:1px solid #F1F5F9">
+          <span style="font-size:14px">${Icons.award} ${esc(c)}</span>
+          <button class="btn btn-ghost" onclick="showToast('证书下载中...','info')">下载</button>
+        </div>`).join('')),
+      exams: () => this.openModal('考试安排', DATA.upcomingExams.map(e =>
+        `<div style="padding:12px;background:#F8FAFF;border-radius:12px;margin-bottom:8px">
+          <div style="font-size:14px;font-weight:600">${esc(e.name)}</div>
+          <div class="text-muted" style="font-size:12px;margin-top:4px">${e.date} · ${e.topic}</div>
+        </div>`).join('')),
+      favorites: () => this.openModal('我的收藏', '<p class="text-muted" style="text-align:center;padding:24px">暂无收藏内容</p>'),
+      notifications: () => this.openModal('消息通知', [
+        { t:'系统通知', m:'您有一门考试即将开始', d:'今天' },
+        { t:'学习提醒', m:'今日还未完成安全学习', d:'2小时前' },
+      ].map(n => `<div style="padding:12px 0;border-bottom:1px solid #F1F5F9"><div style="font-size:11px;color:#2B7AE8;font-weight:600">${n.t}</div><div style="font-size:14px;margin-top:4px">${n.m}</div><div class="text-muted" style="font-size:11px;margin-top:2px">${n.d}</div></div>`).join('')),
+      security: () => this.openSecurityPage(),
+      settings: () => this.openSettingsPage(),
+      help: () => this.openModal('帮助中心', DATA.faq.map(f =>
+        `<details style="margin-bottom:12px;border:1px solid #F1F5F9;border-radius:12px;padding:12px"><summary style="font-size:14px;font-weight:600;cursor:pointer">${esc(f.q)}</summary><p class="text-muted" style="font-size:13px;margin-top:8px;line-height:1.6">${esc(f.a)}</p></details>`).join('')),
+    };
+    (handlers[id] || (() => showToast('功能开发中', 'info')))();
+  },
+
+  // ---------- 账号安全表单（含校验） ----------
+  openSecurityPage() {
+    this.openSubPage('账号安全', `
+      <form id="securityForm" onsubmit="App.submitSecurityForm(event)">
+        <div class="form-group">
+          <label class="form-label">当前密码</label>
+          <input class="form-input" type="password" id="oldPwd" placeholder="请输入当前密码" />
+          <div class="form-error" id="errOldPwd">请输入当前密码</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">新密码</label>
+          <input class="form-input" type="password" id="newPwd" placeholder="至少6位，含字母和数字" />
+          <div class="form-error" id="errNewPwd">密码至少6位，需包含字母和数字</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">确认新密码</label>
+          <input class="form-input" type="password" id="confirmPwd" placeholder="再次输入新密码" />
+          <div class="form-error" id="errConfirmPwd">两次密码输入不一致</div>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%;padding:14px;margin-top:8px">确认修改</button>
+      </form>`);
+  },
+
+  validateSecurityForm() {
+    const oldPwd = $('#oldPwd').value.trim();
+    const newPwd = $('#newPwd').value.trim();
+    const confirmPwd = $('#confirmPwd').value.trim();
+    let valid = true;
+    const show = (id, show) => { const el = $('#'+id); el.classList.toggle('show', show); $('#'+id.replace('err','').replace('Pwd','Pwd')||''); };
+    const setErr = (inputId, errId, condition, msg) => {
+      const input = $('#'+inputId);
+      const err = $('#'+errId);
+      if (condition) { input.classList.add('error'); err.textContent = msg; err.classList.add('show'); valid = false; }
+      else { input.classList.remove('error'); err.classList.remove('show'); }
+    };
+    setErr('oldPwd','errOldPwd', !oldPwd, '请输入当前密码');
+    setErr('newPwd','errNewPwd', !/^(?=.*[A-Za-z])(?=.*\d).{6,}$/.test(newPwd), '密码至少6位，需包含字母和数字');
+    setErr('confirmPwd','errConfirmPwd', newPwd !== confirmPwd, '两次密码输入不一致');
+    return valid;
+  },
+
+  async submitSecurityForm(e) {
+    e.preventDefault();
+    if (!this.validateSecurityForm()) return;
+    showLoading('提交中...');
+    try {
+      await MockAPI.request('changePassword');
+      hideLoading();
+      this.closeSubPage();
+      showToast('密码修改成功', 'success');
+    } catch (err) {
+      hideLoading();
+      showToast(err.message, 'error');
+    }
+  },
+
+  // ---------- 系统设置 ----------
+  openSettingsPage() {
+    const s = state.settings;
+    this.openSubPage('系统设置', `
+      <div class="card" style="padding:0 16px;margin-bottom:16px">
+        <div class="form-switch"><span style="font-size:14px">每日学习提醒</span><button class="switch${s.dailyReminder?' on':''}" data-key="dailyReminder" onclick="App.toggleSetting(this)"></button></div>
+        <div class="form-switch"><span style="font-size:14px">推送通知</span><button class="switch${s.pushNotify?' on':''}" data-key="pushNotify" onclick="App.toggleSetting(this)"></button></div>
+        <div class="form-switch"><span style="font-size:14px">仅 WiFi 下载</span><button class="switch${s.wifiOnly?' on':''}" data-key="wifiOnly" onclick="App.toggleSetting(this)"></button></div>
+      </div>
+      <button class="btn btn-primary" style="width:100%;padding:14px" onclick="App.saveSettings()">保存设置</button>`);
+  },
+
+  toggleSetting(btn) {
+    const key = btn.dataset.key;
+    state.settings[key] = !state.settings[key];
+    btn.classList.toggle('on', state.settings[key]);
+  },
+
+  async saveSettings() {
+    showLoading('保存中...');
+    try {
+      await MockAPI.request('saveSettings', state.settings);
+      hideLoading();
+      this.closeSubPage();
+      showToast('设置已保存', 'success');
+    } catch (e) {
+      hideLoading();
+      showToast(e.message, 'error');
+    }
+  },
+};
+
+// 启动应用
+document.addEventListener('DOMContentLoaded', () => App.init());
+</script>
+</body>
+</html>
